@@ -1,0 +1,15 @@
+[uecs]
+Version = "1.00-E10"
+Room = 1
+Region = 1
+Order = 1
+NodeName = NODENAME
+Port = 16520
+
+[mqtt]
+TopicTop = "uecs-v1"
+BrokerHost = aaa.bbb.cc
+Port = 1883
+User = XXXX
+Passwd = ZZZZZZ
+Id = HHHHH
