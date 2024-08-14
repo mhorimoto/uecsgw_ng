@@ -1,0 +1,10 @@
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="cnd.aXX" room="1" region="1" order="1" priority="1">0</DATA><IP>192.168.0.179</IP></UECS>
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="InAirTemp" room="2" region="1" order="1" priority="29">20.3</DATA><IP>192.168.0.191</IP></UECS>
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="InAirHumid" room="2" region="1" order="1" priority="29">70.9</DATA><IP>192.168.0.191</IP></UECS>
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="InAirHumidDef" room="2" region="1" order="1" priority="29">5.10</DATA><IP>192.168.0.191</IP></UECS>
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="CO2" room="2" region="1" order="1" priority="29">321</DATA><IP>192.168.0.191</IP></UECS>
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="cnd.mIC" room="2" region="1" order="1" priority="29">0</DATA><IP>192.168.0.191</IP></UECS>
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="cnd.aXX" room="1" region="1" order="1" priority="1">0</DATA><IP>192.168.0.177</IP></UECS>
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="cnd.aXX" room="2" region="1" order="1" priority="1">0</DATA><IP>192.168.0.176</IP></UECS>
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="cnd.aXX" room="1" region="1" order="1" priority="1">0</DATA><IP>192.168.0.178</IP></UECS>
+2019/05/26-00:22:14 <?xml version="1.0"?><UECS ver="1.00-E10"><DATA type="cnd.cMC" room="1" region="1" order="1" priority="1">0</DATA><IP>192.168.0.70</IP></UECS>

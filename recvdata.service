@@ -1,0 +1,13 @@
+[Unit]
+Description = recvdata for UECS DATA
+
+[Service]
+ExecStart = /usr/local/bin/recvdata.py
+Restart = always
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
+
+
+# This file is copied to /etc/systemd/system/recvdata.service

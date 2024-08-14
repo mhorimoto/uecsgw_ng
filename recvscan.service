@@ -1,0 +1,13 @@
+[Unit]
+Description = recvscan for UECS SCAN function
+
+[Service]
+ExecStart = /usr/local/bin/recvscan.py
+Restart = always
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
+
+
+# This file is copied to /etc/systemd/system/recvscan.service
