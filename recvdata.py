@@ -64,7 +64,10 @@ while True:
   t = "{0:02d}:{1:02d}:{2:02d}".format(a.hour,a.minute,a.second)
   x = "{0}-{1}".format(d,t)
   txt      = msg.decode()
-  xmlroot  = ET.fromstring(msg)
+  try:
+      xmlroot  = ET.fromstring(msg)
+  except:
+      continue
   xdata    = xmlroot.find('DATA')
   value    = xdata.text
   ccmtype  = xdata.get('type')
@@ -81,6 +84,7 @@ while True:
     data = {
       "V":value
     }
+#    print(params,data)
     try:
       response = requests.post(url,params=params,data=data)
       if response.status_code == 200:
@@ -91,10 +95,12 @@ while True:
         print(f"Request error: {e}")
         
 
+#  if (ccmtype=='WRadiation'):
   if (MQTTEnable):
     topictop = config['mqtt']['TopicTop']
     pubtopic = "{0}/data/{1}/{2}/{3}/{4}/{5}".format(topictop,room,region,order,ccmtype,ipa)
     client.publish(pubtopic,value)
+# endif
   SMPF = TMPD+ipa+".chk"
   if (os.path.exists(SMPF)):
     os.remove(SMPF)
