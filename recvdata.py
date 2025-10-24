@@ -14,7 +14,7 @@ import configparser
 config = configparser.ConfigParser()
 config.read('/usr/local/etc/uecsgw/config.ini')
 
-VERSION="3.10"
+VERSION="3.20"
 HOST = ''
 PORT = int(config['uecs']['Port'])
 TMPD = "/tmp/ckua-"
@@ -25,6 +25,13 @@ if (config['mqtt']['Valid']!='no'):
 else:
   MQTTEnable = False
   
+if (config['uecsrelay']['Valid'] != 'no'):
+    UECSrelay = True
+    UECSrelayHOST = config['uecsrelay']['host']
+    relayTO = (UECSrelayHOST,16520)
+else:
+    UECSrelay = False
+
 if (config['uecsconsole']['Valid'] != 'no'):
   uecsConsoleEnable = True
   url = config['uecsconsole']['url']
@@ -78,23 +85,28 @@ while True:
   ipa      = xmlroot.find('IP').text
   logm     = "{0},{1},{2},{3},{4},{5},{6},{7}".format(x,ccmtype,room,region,order,priority,value,ipa)
   syslog.syslog(syslog.LOG_INFO,logm)
-  if ipa in hosts_dict:
-    amac = hosts_dict[ipa]
-    params = {"M":amac}
-    data = {
-      "V":value
-    }
+  if uecsConsoleEnable == True:
+    if ipa in hosts_dict:
+      amac = hosts_dict[ipa]
+      params = {"M":amac}
+      data = {
+        "V":value
+      }
 #    print(params,data)
-    try:
-      response = requests.post(url,params=params,data=data)
-      if response.status_code == 200:
-        pass
-      else:
-        print(f"error")
-    except requests.RequestException as e:
+      try:
+        response = requests.post(url,params=params,data=data)
+        if response.status_code == 200:
+          pass
+        else:
+          print(f"error")
+      except requests.RequestException as e:
         print(f"Request error: {e}")
         
-
+# UECS Relay
+  if (UECSrelay):
+    s.sendto(msg,relayTO)
+    print(msg.decode())
+        
 #  if (ccmtype=='WRadiation'):
   if (MQTTEnable):
     topictop = config['mqtt']['TopicTop']
