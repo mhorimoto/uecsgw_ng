@@ -14,18 +14,18 @@ import configparser
 config = configparser.ConfigParser()
 config.read('/usr/local/etc/uecsgw/config.ini')
 
-VERSION="3.20"
+VERSION="3.21"
 HOST = ''
 PORT = int(config['uecs']['Port'])
 TMPD = "/tmp/ckua-"
 
-if (config['mqtt']['Valid']!='no'):
+if (config['mqtt']['Valid']=='yes'):
   MQTTEnable = True
   import paho.mqtt.client as mqtt
 else:
   MQTTEnable = False
   
-if (config['uecsrelay']['Valid'] != 'no'):
+if (config['uecsrelay']['Valid'] == 'yes'):
     UECSrelay = True
     UECSrelayHOST = config['uecsrelay']['host']
     relayTO = (UECSrelayHOST,16520)
