@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<UECS ver="1.00-E10">
+<DATA type="InAirTemp.mIC" room="1" region="1" order="1" priority="1">25.3</DATA>
+<IP>192.168.1.50</IP>
+</UECS>

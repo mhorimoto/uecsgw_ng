@@ -1,0 +1,13 @@
+[Unit]
+Description = UECS NODESCAN/CCMSCAN responder
+
+[Service]
+ExecStart = /usr/local/bin/scanresponder.py
+Restart = always
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
+
+
+# This file is copied to /etc/systemd/system/scanresponder.service

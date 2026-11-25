@@ -1,53 +1,92 @@
 # HANDOFF — wip/scan-responder
 
-作成日: 2026-11-25 / ブランチ: `wip/scan-responder`(main の ed5f5be から分岐)
+作成日: 2026-11-25 / 最終更新: 2026-11-26 / ブランチ: `wip/scan-responder`(main の ed5f5be から分岐)
 
 ## 現状(重要)
 
-- 引き継ぎ時点で **作業ツリーはクリーン**で、NODESCAN / CCMSCAN **応答スクリプトの作業中の変更は存在しなかった**。
-  このブランチのコミットは本ファイルだけ。応答スクリプトが未保存・別マシン・別ブランチ(`devel` 等)にある場合は、
-  そちらから取り込む必要がある。
-- リポジトリにある `nodescan.py` / `ccmscan.py` / `recvscan.py` は **スキャンを送る/結果を受ける側**であり、
-  NODESCAN / CCMSCAN に **応答する側ではない**。
+`scanresponder.py` V1.00 を実装・実機確認済み。**未コミット**。
+次のセッションの主タスクは CCMSCAN で返す CCM 一覧の実装（`config.ini` の `[ccm*]` セクションから読む方式）。
 
-## 調査結果(このセッションで確認できたこと)
+## 実装済み
 
-- `recvdata.py`(V3.30)は 16520/udp で CCM 電文を受信し、syslog・UECS リレー・MQTT・UECS Console へ転送する。
-  main に反映済み・実機(uecsgw08)で動作確認済み。
-  - `SO_REUSEADDR` 設定済み(uecsrxdump 等と 16520/udp を共有可)。
-  - DATA/IP タグなし(NODESCAN 等)・UTF-8 不正・XML 不正の電文は LOG_WARNING で読み飛ばす。
-  - UECS Console の Basic 認証は `config.ini` の `[uecsconsole] User / Passwd` から読む。
-- 既存スキャン系スクリプトの現状(いずれも未整備):
-  - `nodescan.py`: NODESCAN をブロードキャストで送るだけ。NIC 名 `enp1s0` と
-    shebang `/opt/rh/rh-python36/...` が固定(RHEL 系前提)。
-  - `ccmscan.py`: 引数のホストへ CCMSCAN(page=1 固定)を送り応答を解析。
-    バインド IP が `192.168.0.66` に固定。
-  - `recvscan.py`: 16529/udp で受信してログへ。`msg == "."` は bytes と str の比較で常に偽、
-    エラーメッセージが未定義の `lgf` を参照している(Python3 では不具合)。
-  - スキャン用ポートは **16529/udp**(通常 CCM の 16520 とは別)。
+| ファイル | 状態 | 内容 |
+| :-- | :-- | :-- |
+| `scanresponder.py` (V1.00) | 未コミット | NODESCAN/CCMSCAN 応答デーモン本体 |
+| `scanresponder.service` | 未コミット | systemd ユニットファイル |
+| `README-scanresponder.md` | 未コミット | 説明書（未解決項目セクションあり） |
+| `testdata/` | 未コミット | テスト用パケットファイルと send_test.py |
+| `config.ini-sample` | 未コミット | `[uecs]` に Vender/UecsId のコメント例を追記 |
+| `README.md` | 未コミット | scanresponder.py を追加、バージョンを 0.60 に更新 |
+| `.gitignore` | 未コミット | `__pycache__/` を追加 |
+| `HANDOFF.md` | 未コミット | 本ファイル |
 
-## 決まった設計
+### インストール手順(実機)
+```
+install -m 755 scanresponder.py /usr/local/bin/
+install -m 644 scanresponder.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now scanresponder
+```
 
-- 設計として確定したものはまだない(応答スクリプトの設計メモは未受領)。
-- 方針案(未承認): `recvdata.py` とは別プロセスの応答デーモンとし、16529/udp で
-  NODESCAN / CCMSCAN を受けて応答する。設定は `config.ini` を共有し、`[uecs]` の
-  Version / Room / Region / Order / NodeName を応答内容に使う。
+### 実機確認(2026-11-26, opinas01 / 192.168.38.99)
 
-## 残りの作業
+- NODESCAN 応答: NAME=opinas01, VENDER=YS-Lab, UECSID=0123456789, IP=192.168.38.99, MAC=9CB654AE567E ✓
+- CCMSCAN page=1 応答: CCMNUM page=1 total=1 0件 ✓
+- CCMSCAN page=2 応答: CCMNUM page=2 total=1 0件 ✓
+- 壊れた XML: 応答なし ✓
+- DATA タグのみ: 応答なし ✓
 
-1. 応答スクリプトの作業中ファイルの所在を確認し、このブランチに取り込む。
-2. NODESCAN / CCMSCAN の応答電文仕様を UECS 仕様書で確認する
-   (NODESCAN 応答の NODE 属性、CCMSCAN の CCMNUM と page 分割、CCM 一覧の項目など)。
-3. 応答デーモンを実装(systemd ユニットは `recvscan.service` を参考に)。
-4. 既存スクリプトの固定値(NIC 名・IP・shebang)を `config.ini` 化または引数化する。
-5. `recvscan.py` の不具合(上記)の修正。
-6. 実機で確認し、README とバージョン表(README.md の「開発中」)を更新する。
+### 修正履歴
+
+- `mac_for_ip()`: `subprocess.run(..., capture_output=True)` は Python 3.6 非対応のため
+  `stdout=subprocess.PIPE, stderr=subprocess.PIPE` + `.decode()` に変更。
+
+## 次のタスク(優先順)
+
+### 1. CCMSCAN で返す CCM 一覧の実装【次回メインタスク】
+
+**方針**: `config.ini` に `[ccm*]` セクションを追加し、発信する CCM を列挙する。
+
+```ini
+# 設定例
+[ccm0]
+type = InAirTemp.mIC
+room = 1
+region = 1
+order = 1
+priority = 1
+cast = 1
+unit = C
+SR = S
+LV = A-10S-0
+```
+
+実装のポイント:
+- `scanresponder.py` 起動時に `config.ini` の `[ccm*]` セクションを全て読み込む
+- CCMSCAN 応答時に CCM 一覧を `<CCM No="N" ...>type</CCM>` 形式で返す
+- 1パケット 480 byte 上限を超える場合はページ分割（`total` を複数ページ）
+- `testdata/ccmscan_p1_req.xml` / `ccmscan_p2_req.xml` でページ分割のテストが可能
+
+詳細は `README-scanresponder.md` の「未解決項目」セクションも参照。
+
+### 2. その他の残作業
+
+- 既存スクリプトの固定値(NIC 名・IP・shebang)を `config.ini` 化または引数化する。
+- `recvscan.py` の不具合修正:
+  - `msg == "."` は bytes vs str 比較で常に偽 → `msg == b"."`
+  - `except` ブロックで未定義の `lgf` を参照 → `LOGF` に変更
 
 ## 未解決の疑問
 
-- 応答する CCM の一覧はどこから得るか(`[m304*]` の設定か、受信実績からの自動収集か)。
-- 16529/udp と 16520/udp を同一プロセスで扱うか、別プロセスにするか。
-- `recvdata.py` の受信した NODESCAN をリレー先へ流すべきか(現状は読み飛ばしでリレーもされない)。
-- 対象の動作環境は RHEL 系(shebang)か Debian 系(uecsgw08)か。
+- `recvdata.py` の受信した NODESCAN をリレー先へ流すべきか(現状は読み飛ばし)。
 - `recvdata-rotation.sh` が呼ぶ `uecsrxd-insert.py` の所在(リポジトリに無い)。
 - 過去に `config.ini` 直書きだった認証情報が git 履歴に残っている。パスワードを使い回しているなら変更する。
+
+## 参考: UECS ポート割り当て
+
+| ポート | 用途 |
+| :-- | :-- |
+| UDP 16520 | CCM データ送受信 (`recvdata.py`) |
+| UDP 16521 | 提供者サーチ(SEARCH/SERVER) |
+| UDP 16522〜16528 | 予約 |
+| UDP 16529 | ノード/通信子スキャン (`scanresponder.py`, `recvscan.py`) |

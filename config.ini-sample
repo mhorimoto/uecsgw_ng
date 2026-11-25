@@ -8,6 +8,9 @@ Region = 1
 Order = 1
 NodeName = NODENAME
 Port = 16520
+# Optional: for NODESCAN response (scanresponder.py)
+# Vender = uecsgw
+# UecsId =
 
 [mqtt]
 Valid = no
