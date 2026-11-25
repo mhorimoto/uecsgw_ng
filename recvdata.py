@@ -16,7 +16,7 @@ import threading
 config = configparser.ConfigParser()
 config.read('/usr/local/etc/uecsgw/config.ini')
 
-VERSION="3.30"
+VERSION="3.40"
 HOST = ''
 PORT = int(config['uecs']['Port'])
 TMPD = "/tmp/ckua-"
@@ -52,6 +52,8 @@ s = socket(AF_INET,SOCK_DGRAM)
 # カーネルの受信バッファを大きくして、瞬間的な処理遅延に対する耐性を上げておく
 # (根本対策は下のワーカースレッド化だが、念のための保険として増やす)
 s.setsockopt(SOL_SOCKET, SO_RCVBUF, 1024*1024)
+# uecsrxdump等の他プログラムと16520/udpを共有できるようにする
+s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 s.bind((HOST,PORT))
 a = datetime.datetime.now()
 d = "{0:4d}/{1:02d}/{2:02d}".format(a.year,a.month,a.day)
@@ -93,8 +95,8 @@ console_queue = queue.Queue(maxsize=1000)
 # 大きく下がる。requests.Session()はスレッドセーフに複数スレッドから
 # 使える設計になっている。
 _console_session = requests.Session()
-_console_session.auth = ('t-house', 'miyazaki')
 if uecsConsoleEnable:
+  _console_session.auth = (config['uecsconsole']['User'], config['uecsconsole']['Passwd'])
   CONSOLE_WORKERS = int(config['uecsconsole'].get('Workers', '4'))
   _adapter = requests.adapters.HTTPAdapter(
       pool_connections=CONSOLE_WORKERS, pool_maxsize=CONSOLE_WORKERS
@@ -133,7 +135,11 @@ while True:
   d = "{0:4d}/{1:02d}/{2:02d}".format(a.year,a.month,a.day)
   t = "{0:02d}:{1:02d}:{2:02d}".format(a.hour,a.minute,a.second)
   x = "{0}-{1}".format(d,t)
-  txt      = msg.decode()
+  try:
+      msg.decode('utf-8')
+  except UnicodeDecodeError as e:
+      syslog.syslog(syslog.LOG_WARNING, f"{x} UTF-8デコード失敗: {e}: from={address} msg={msg!r}")
+      continue
   try:
       xmlroot  = ET.fromstring(msg)
   except Exception as e:
@@ -141,13 +147,20 @@ while True:
       syslog.syslog(syslog.LOG_WARNING, f"{x} XMLパース失敗: {e}: from={address} msg={msg!r}")
       continue
   xdata    = xmlroot.find('DATA')
+  if xdata is None:
+      syslog.syslog(syslog.LOG_WARNING, f"{x} DATAタグなし(NODESCAN等): from={address} msg={msg!r}")
+      continue
+  xip      = xmlroot.find('IP')
+  if xip is None:
+      syslog.syslog(syslog.LOG_WARNING, f"{x} IPタグなし: from={address} msg={msg!r}")
+      continue
   value    = xdata.text
   ccmtype  = xdata.get('type')
   room     = xdata.get('room')
   region   = xdata.get('region')
   order    = xdata.get('order')
   priority = xdata.get('priority')
-  ipa      = xmlroot.find('IP').text
+  ipa      = xip.text
   logm     = "{0},{1},{2},{3},{4},{5},{6},{7}".format(x,ccmtype,room,region,order,priority,value,ipa)
   syslog.syslog(syslog.LOG_INFO,logm)
 

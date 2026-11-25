@@ -21,6 +21,8 @@ Id = HHHHHHHHHHHHH
 [uecsconsole]
 Valid = no
 url = URL
+User = USERNAME
+Passwd = PASSWORD
 
 [m304a]
 id = 01
