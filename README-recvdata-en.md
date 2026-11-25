@@ -1,19 +1,29 @@
-# recvdata.py README
+# recvdata.py README (V3.40)
 
-Here is an English README for your recvdata.py program, including setup and systemd service instructions, based on the provided files.[^1][^2][^3]
-
-***
+recvdata.py, its config file and the systemd unit file together provide unattended receiving and forwarding of UECS messages.
 
 ## Overview
 
-**recvdata.py** is a daemon program that receives UECS protocol messages broadcast via UDP and forwards them to system syslog, an MQTT broker, or by HTTP POST to a console server as specified in a config file. All transfer and operational details are controlled via `config.ini`.[^2][^1]
+**recvdata.py** is a daemon that receives UECS messages sent over UDP (default port 16520/udp) and does the following. Each destination is switched on or off in `config.ini`.
+
+1. **syslog logging** (always): logs `datetime,type,room,region,order,priority,value,sender-IP` as CSV at LOG_INFO.
+2. **UECS relay** (`[uecsrelay]`): forwards the received message unchanged to port 16520/udp of another host.
+3. **UECS Console** (`[uecsconsole]`): sends the value of messages from the IPs listed in `[m304*]` sections by HTTP POST (Basic auth).
+4. **MQTT** (`[mqtt]`): publishes the value to `TopicTop/data/room/region/order/type/IP`.
+
+### Behavior notes
+
+- **Port sharing**: `SO_REUSEADDR` is set, so 16520/udp can be shared with other programs such as uecsrxdump.
+- **Bad messages are skipped**: messages that are not valid UTF-8 or XML, or that lack a DATA or IP tag (e.g. NODESCAN), are logged to syslog at LOG_WARNING and skipped. The daemon does not stop.
+- **Avoiding packet loss**: HTTP POSTs to UECS Console run in worker threads (4 by default, queue limit 1000) so the receive loop is never blocked. If the queue is full, messages are dropped with a syslog warning. The HTTP connection (keep-alive) is shared by all workers, and the receive buffer is enlarged to 1 MiB.
+- **Temp file cleanup**: on every message, `/tmp/ckua-<IP>.chk` is removed if it exists.
 
 ## Installation and Setup
 
-### 1. Install the Program and Config Files
+### 1. Install the program and config file
 
 - Place `recvdata.py` at `/usr/local/bin/recvdata.py` and make it executable.
-- Copy `config.ini-sample` to `/usr/local/etc/uecsgw/config.ini` and edit settings to match your environment.[^2]
+- Copy `config.ini-sample` to `/usr/local/etc/uecsgw/config.ini` and edit it for your environment.
 
 ```sh
 sudo cp recvdata.py /usr/local/bin/recvdata.py
@@ -22,26 +32,24 @@ sudo mkdir -p /usr/local/etc/uecsgw/
 sudo cp config.ini-sample /usr/local/etc/uecsgw/config.ini
 ```
 
+`config.ini` holds the UECS Console credentials and the MQTT password, so restrict its permissions if needed (e.g. `sudo chmod 600 /usr/local/etc/uecsgw/config.ini`).
 
-### 2. Install Required Python Packages
+### 2. Install Python packages
 
 ```sh
-pip install paho-mqtt requests
+pip install requests paho-mqtt
 ```
 
-- `requests` is required for HTTP POST. `paho-mqtt` is required for MQTT features.
+- `requests` is always required (it is imported unconditionally).
+- `paho-mqtt` is required only when `[mqtt]` has `Valid = yes`.
 
-
-### 3. Register systemd Service
-
-- Copy `recvdata.service` to `/etc/systemd/system/recvdata.service`.[^3]
+### 3. Install the systemd unit
 
 ```sh
 sudo cp recvdata.service /etc/systemd/system/recvdata.service
 ```
 
-
-### 4. Enable and Start the Service
+### 4. Enable and start
 
 ```sh
 sudo systemctl daemon-reload
@@ -49,46 +57,33 @@ sudo systemctl enable recvdata.service
 sudo systemctl start recvdata.service
 ```
 
-- To check service status:
+- Status: `sudo systemctl status recvdata.service`
+- Logs: `journalctl -u recvdata.service` (messages are also written to syslog)
 
-```sh
-sudo systemctl status recvdata.service
-```
+## Config file details (config.ini)
 
-- To check logs:
+| Section | Key | Description |
+| :-- | :-- | :-- |
+| `[uecs]` | Port | UDP port to receive on (normally 16520). Also Version, Room, Region, Order, NodeName |
+| `[mqtt]` | Valid | Enabled only when `yes` |
+| | TopicTop, BrokerHost, Port, User, Passwd, Id | MQTT broker connection and topic settings |
+| `[uecsrelay]` | Valid | Enabled only when `yes` |
+| | host | Destination host (destination port is fixed to 16520) |
+| `[uecsconsole]` | Valid | Enabled for **anything other than `no`** |
+| | url | URL to POST to |
+| | User, Passwd | Basic auth credentials (required when enabled; startup fails without them) |
+| | Workers | Number of POST workers (default 4) |
+| `[m304*]` | id, ip, mac | Device table for UECS Console. Every section whose name starts with `m304` is read; messages from `ip` are posted for `mac` (upper-cased) |
 
-```sh
-journalctl -u recvdata.service
-```
+- The `[mqtt]`, `[uecsrelay]` and `[uecsconsole]` sections must **exist even when disabled**, because `Valid` is read from each.
+- `[uecsconsole]` `Valid` is evaluated the opposite way from the others: to disable it you must write `Valid = no`.
 
+## File summary
 
-## Config File Details
-
-- **[uecs]**: Basic UECS receiver settings (port, room, region, etc.).
-- **[mqtt]**: MQTT broker settings (`Valid=yes` enables).
-- **[uecsconsole]**: UECS console server settings (`Valid=yes` enables).
-- **[m304]**: Per-device (IP/MAC/ID) mapping settings.[^2]
-
-See `config.ini-sample` for further reference.
-
-## File Summary
-
-| File Name | Purpose |
+| File | Purpose |
 | :-- | :-- |
 | recvdata.py | Main UECS message receiver/forwarder |
-| config.ini | Operation and forwarding configuration |
+| config.ini | Operation and forwarding settings (`/usr/local/etc/uecsgw/`) |
+| config.ini-sample | Template for config.ini |
 | recvdata.service | systemd service unit file |
-
-
-***
-
-With this setup, the daemon will automatically launch at system start and continuously receive and forward UECS messages according to your configuration.[^1][^3][^2]
-
-<div style="text-align: center">⁂</div>
-
-[^1]: recvdata.py
-
-[^2]: config.ini-sample
-
-[^3]: recvdata.service
-
+| recvdata-rotation.sh | Example log rotation script (needs a separate `uecsrxd-insert.py`) |

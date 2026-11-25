@@ -11,8 +11,8 @@ It is intended for building Linux-based "UECS gateway" devices, running multiple
 ## 主要プログラム／Main Utility
 
 **recvdata.py**
-UECS電文の受信・転送デーモン（現状での動作確認済みプログラム）
-A daemon for receiving UECS messages and forwarding them (the only program currently stable and operational).
+UECS電文の受信・転送デーモン（現状での動作確認済みプログラム）。受信電文をsyslogへ記録し、MQTT・UECSリレー(UDP転送)・UECS Console(HTTP POST)へ転送します。
+A daemon that receives UECS messages, logs them to syslog, and forwards them to MQTT, a UECS relay (UDP) and UECS Console (HTTP POST). It is the only program currently stable and operational.
 
 ***
 
@@ -27,8 +27,8 @@ A daemon for receiving UECS messages and forwarding them (the only program curre
 
 | プログラム名 | バージョン | 備考 |
 | :-- | :-- | :-- |
-| uecsgw_ng | 0.10 | ユーティリティ全体の呼称 (The overall name of the utility) |
-| recvdata.py | 3.10 | 動作安定 (Available) |
+| uecsgw_ng | 0.50 | ユーティリティ全体の呼称 (The overall name of the utility) |
+| recvdata.py | 3.40 | 動作安定 (Available) |
 | ccmscan.py | 開発中 | under development |
 | nodescan.py | 開発中 | under development |
 | recvscan.py | 開発中 | under development |
@@ -39,14 +39,15 @@ A daemon for receiving UECS messages and forwarding them (the only program curre
 ## 作者／Author
 
 - 堀本　正文（Masafumi Horimoto）
-- Fukuoka, Japan
+- mh(at)ys-lab.tech
+- YS Lab LCC, Fukuoka, Japan
 
 ***
 
 ## 日付／Date
 
-- 2025年8月29日
-- August 29, 2025
+- 2025年8月29日 作成 / 2026年11月25日 更新
+- Created: August 29, 2025 / Updated: November 25, 2026
 
 ***
 
@@ -78,14 +79,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
-<div style="text-align: center">⁂</div>
-
-[^1]: recvdata.py
-
-[^2]: config.ini-sample
-
-[^3]: recvdata.service
-
-[^4]: README.md
-

@@ -18,11 +18,16 @@ User = XXXXXXXXXX
 Passwd = ZZZZZZZZZZZ
 Id = HHHHHHHHHHHHH
 
+[uecsrelay]
+Valid = no
+host = 192.168.aaa.ddd
+
 [uecsconsole]
 Valid = no
 url = URL
 User = USERNAME
 Passwd = PASSWORD
+Workers = 4
 
 [m304a]
 id = 01
